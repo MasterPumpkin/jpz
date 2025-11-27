@@ -32,8 +32,8 @@ Aplikace nabízí komplexní pohled na data v několika sekcích:
 
 1. **Naklonujte repozitář:**
    ```bash
-   git clone https://github.com/vase-uzivatelske-jmeno/nazev-repozitare.git
-   cd nazev-repozitare
+   git clone https://github.com/MasterPumpkin/jpz.git
+   cd jpz
    ```
 
 2. **Vytvořte virtuální prostředí (doporučeno):**
@@ -57,9 +57,7 @@ Aplikace nabízí komplexní pohled na data v několika sekcích:
 
 ## Struktura dat
 
-Aplikace očekává soubor `data.csv` v kořenovém adresáři. Tento soubor by měl obsahovat exportovaná data z Cermatu/MŠMT s následujícími sloupci (nebo ekvivalenty, které aplikace přemapuje):
-- `Škola`, `Obor`, `Město`, `Kraj`, `Rok`
-- Metriky: `Kapacita`, `Počet přihlášek`, `Počet přijatých`, `Priority 1-3`, `Důvody nepřijetí`
+Aplikace očekává soubor `data.csv` v kořenovém adresáři. Tento soubor obsahuje exportovaná veřejně dostupnádata z Cermatu (https://data.cermat.cz/menu/data-a-analyticke-vystupy-jednotna-prijimaci-zkouska/agregovana-data-jpz)
 
 ---
-*Vytvořeno pro lepší orientaci v džungli přijímaček.* 🎓
+*Vytvořeno pro lepší orientaci v džungli přijímaček.*
