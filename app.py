@@ -145,7 +145,7 @@ if page == "Celkový přehled trhu":
         # Přidání linek pro orientaci
         fig_scatter.add_vline(x=1, line_dash="dash", line_color="green", annotation_text="Kapacita = Poptávka")
         fig_scatter.add_hline(y=50, line_dash="dash", line_color="gray", annotation_text="50% Šance")
-        st.plotly_chart(fig_scatter, use_container_width=True)
+        st.plotly_chart(fig_scatter, width="stretch")
     
     with col2:
         st.markdown("### Top 'Jistoty'")
@@ -187,7 +187,7 @@ if page == "Celkový přehled trhu":
         text_auto=True,
         color_discrete_map={'1. Priorita': '#2ca02c', '2. Priorita': '#ff7f0e', '3. Priorita': '#1f77b4'}
     )
-    st.plotly_chart(fig_bar, use_container_width=True)
+    st.plotly_chart(fig_bar, width="stretch")
     
     # --- C) DŮVODY ZAMÍTNUTÍ ---
     st.divider()
@@ -226,7 +226,7 @@ if page == "Celkový přehled trhu":
             text_auto='.1f',
             color_discrete_map={'Nedostačující kapacita': '#d62728', 'Nesplnění podmínek': '#7f7f7f', 'Přijat na vyšší prioritu (Odliv)': '#9467bd'}
         )
-        st.plotly_chart(fig_reject, use_container_width=True)
+        st.plotly_chart(fig_reject, width="stretch")
         st.caption("💡 **Interpretace:** Pokud dominuje fialová (Odliv), škola je často 'záložní volbou'. Pokud červená (Kapacita), je o školu reálný zájem.")
     else:
         fig_reject = px.bar(
@@ -239,7 +239,7 @@ if page == "Celkový přehled trhu":
             text_auto=True,
             color_discrete_map={'Nedostačující kapacita': '#d62728', 'Nesplnění podmínek': '#7f7f7f', 'Přijat na vyšší prioritu (Odliv)': '#9467bd'}
         )
-        st.plotly_chart(fig_reject, use_container_width=True)
+        st.plotly_chart(fig_reject, width="stretch")
     
     # --- D) OBOROVÁ ANALÝZA ---
     st.divider()
@@ -262,7 +262,7 @@ if page == "Celkový přehled trhu":
         color_continuous_scale='RdYlGn_r'
     )
     fig_obory.update_traces(texttemplate='%{text:.2f}', textposition='outside')
-    st.plotly_chart(fig_obory, use_container_width=True)
+    st.plotly_chart(fig_obory, width="stretch")
 
     # --- F) MEZIROČNÍ SROVNÁNÍ ---
     st.divider()
@@ -283,11 +283,13 @@ if page == "Celkový přehled trhu":
     
     # Pivot pro snadné srovnání
     df_pivot = df_yoy.pivot(index='Obor', columns='Rok', values='Prihlaseni').fillna(0)
+    # Fix: Převedeme názvy sloupců (roky) na string, aby nedocházelo k mixed-type warningu
+    df_pivot.columns = df_pivot.columns.astype(str)
     
     # Zkontrolujeme, zda máme data pro oba roky 2024 a 2025
-    if 2024 in df_pivot.columns and 2025 in df_pivot.columns:
-        df_pivot['Zmena_Abs'] = df_pivot[2025] - df_pivot[2024]
-        df_pivot['Zmena_Pct'] = ((df_pivot[2025] - df_pivot[2024]) / df_pivot[2024] * 100).fillna(0)
+    if '2024' in df_pivot.columns and '2025' in df_pivot.columns:
+        df_pivot['Zmena_Abs'] = df_pivot['2025'] - df_pivot['2024']
+        df_pivot['Zmena_Pct'] = ((df_pivot['2025'] - df_pivot['2024']) / df_pivot['2024'] * 100).fillna(0)
         
         # Top skokani (absolutní nárůst) - pouze kladné
         top_growers = df_pivot[df_pivot['Zmena_Abs'] > 0].sort_values('Zmena_Abs', ascending=False).head(5)
@@ -297,18 +299,18 @@ if page == "Celkový přehled trhu":
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("#### 🚀 Skokani roku (Absolutní nárůst zájmu)")
-            st.dataframe(top_growers[[2024, 2025, 'Zmena_Abs', 'Zmena_Pct']].style.format({
-                2024: "{:.0f}",
-                2025: "{:.0f}",
+            st.dataframe(top_growers[['2024', '2025', 'Zmena_Abs', 'Zmena_Pct']].style.format({
+                '2024': "{:.0f}",
+                '2025': "{:.0f}",
                 'Zmena_Abs': "{:+.0f}",
                 'Zmena_Pct': "{:+.1f}%"
             }))
             
         with col2:
             st.markdown("#### 📉 Pokles zájmu")
-            st.dataframe(top_losers[[2024, 2025, 'Zmena_Abs', 'Zmena_Pct']].style.format({
-                2024: "{:.0f}",
-                2025: "{:.0f}",
+            st.dataframe(top_losers[['2024', '2025', 'Zmena_Abs', 'Zmena_Pct']].style.format({
+                '2024': "{:.0f}",
+                '2025': "{:.0f}",
                 'Zmena_Abs': "{:+.0f}",
                 'Zmena_Pct': "{:+.1f}%"
             }))
@@ -380,7 +382,7 @@ if page == "Celkový přehled trhu":
                 height=600,
                 margin=dict(l=0, r=0, t=40, b=0)
             )
-            st.plotly_chart(fig_dumbbell, use_container_width=True)
+            st.plotly_chart(fig_dumbbell, width="stretch")
         else:
             st.warning("Nedostatek dat pro zobrazení grafu priorit (chybí data pro oba roky u top oborů).")
     
@@ -561,7 +563,7 @@ elif page == "Detail školy":
                     color_discrete_map={'1. Priorita': '#2ca02c', '2. Priorita': '#ff7f0e', '3. Priorita': '#1f77b4'}
                 )
                 fig_school_prio.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-                st.plotly_chart(fig_school_prio, use_container_width=True)
+                st.plotly_chart(fig_school_prio, width="stretch")
     
             with col_g2:
                 # Graf odmítnutí po oborech
@@ -588,7 +590,7 @@ elif page == "Detail školy":
                     color_discrete_map={'Nedostačující kapacita': '#d62728', 'Nesplnění podmínek': '#7f7f7f', 'Přijat na vyšší prioritu (Odliv)': '#9467bd'}
                 )
                 fig_school_reject.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-                st.plotly_chart(fig_school_reject, use_container_width=True)
+                st.plotly_chart(fig_school_reject, width="stretch")
     else:
         st.warning("Pro zobrazení detailu školy upravte filtry (žádná škola neodpovídá zadání).")
 
