@@ -2,6 +2,8 @@
 
 Interaktivní analytický dashboard vytvořený v Pythonu (Streamlit), který vizualizuje data z přijímacího řízení na střední školy v České republice. Nástroj slouží uchazečům, rodičům i školám k lepšímu pochopení trhu, identifikaci "bezpečných" škol a analýze meziročních trendů.
 
+**Odkaz na live aplikaci:** [https://jpz-analysis.streamlit.app/](https://jpz-analysis.streamlit.app/)
+
 ## Klíčové funkce
 
 Aplikace nabízí komplexní pohled na data v několika sekcích:
@@ -57,7 +59,7 @@ Aplikace nabízí komplexní pohled na data v několika sekcích:
 
 ## Struktura dat
 
-Aplikace očekává soubor `data.csv` v kořenovém adresáři. Tento soubor obsahuje exportovaná veřejně dostupná data z Cermatu (https://data.cermat.cz/menu/data-a-analyticke-vystupy-jednotna-prijimaci-zkouska/agregovana-data-jpz)
+Aplikace očekává soubor `data.csv` v kořenovém adresáři. Tento soubor obsahuje exportovaná veřejně dostupná data z Cermatu ([https://data.cermat.cz/menu/data-a-analyticke-vystupy-jednotna-prijimaci-zkouska/agregovana-data-jpz](https://data.cermat.cz/menu/data-a-analyticke-vystupy-jednotna-prijimaci-zkouska/agregovana-data-jpz))
 
 ---
 *Vytvořeno pro lepší orientaci v džungli přijímaček.*
