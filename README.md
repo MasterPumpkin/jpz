@@ -1,8 +1,8 @@
-# 📊 Analýza přijímacích řízení na střední školy (2024–2025)
+# Analýza přijímacích řízení na střední školy (2024–2025)
 
 Interaktivní analytický dashboard vytvořený v Pythonu (Streamlit), který vizualizuje data z přijímacího řízení na střední školy v České republice. Nástroj slouží uchazečům, rodičům i školám k lepšímu pochopení trhu, identifikaci "bezpečných" škol a analýze meziročních trendů.
 
-## 🚀 Klíčové funkce
+## Klíčové funkce
 
 Aplikace nabízí komplexní pohled na data v několika sekcích:
 
@@ -22,13 +22,13 @@ Aplikace nabízí komplexní pohled na data v několika sekcích:
 - **Benchmarking**: Srovnání úspěšnosti a převisu školy vůči průměru trhu (regionu/oboru).
 - **Meziroční změny po oborech**: Detailní tabulka s indikátory růstu/poklesu přihlášek.
 
-## 🛠️ Použité technologie
+## Použité technologie
 
 - **[Streamlit](https://streamlit.io/)**: Frontend a interaktivní rozhraní.
 - **[Pandas](https://pandas.pydata.org/)**: Zpracování a čištění dat (ETL).
 - **[Plotly](https://plotly.com/python/)**: Interaktivní vizualizace a grafy.
 
-## computer: Jak spustit aplikaci lokálně
+## Jak spustit aplikaci lokálně
 
 1. **Naklonujte repozitář:**
    ```bash
@@ -55,7 +55,7 @@ Aplikace nabízí komplexní pohled na data v několika sekcích:
    streamlit run app.py
    ```
 
-## 📂 Struktura dat
+## Struktura dat
 
 Aplikace očekává soubor `data.csv` v kořenovém adresáři. Tento soubor by měl obsahovat exportovaná data z Cermatu/MŠMT s následujícími sloupci (nebo ekvivalenty, které aplikace přemapuje):
 - `Škola`, `Obor`, `Město`, `Kraj`, `Rok`
