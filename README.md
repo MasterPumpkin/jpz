@@ -57,7 +57,7 @@ Aplikace nabízí komplexní pohled na data v několika sekcích:
 
 ## Struktura dat
 
-Aplikace očekává soubor `data.csv` v kořenovém adresáři. Tento soubor obsahuje exportovaná veřejně dostupnádata z Cermatu (https://data.cermat.cz/menu/data-a-analyticke-vystupy-jednotna-prijimaci-zkouska/agregovana-data-jpz)
+Aplikace očekává soubor `data.csv` v kořenovém adresáři. Tento soubor obsahuje exportovaná veřejně dostupná data z Cermatu (https://data.cermat.cz/menu/data-a-analyticke-vystupy-jednotna-prijimaci-zkouska/agregovana-data-jpz)
 
 ---
 *Vytvořeno pro lepší orientaci v džungli přijímaček.*
