@@ -98,7 +98,19 @@ def update_database(all_dfs):
 
     # 1. Číselník škol
     print("Aktualizuji číselník škol (skoly)...")
+    cur.execute("PRAGMA table_info(skoly)")
+    existing_cols = [c[1] for c in cur.fetchall()]
+    if "ulice" not in existing_cols:
+        cur.execute("ALTER TABLE skoly ADD COLUMN ulice TEXT;")
+    if "display_name" not in existing_cols:
+        cur.execute("ALTER TABLE skoly ADD COLUMN display_name TEXT;")
+
     schools_grouped = df_combined.groupby('REDIZO').first().reset_index()
+
+    # Zjistit duplicitní kombinace (nazev_skoly, mesto)
+    dup_counts = df_combined.groupby(['NÁZEV ŠKOLY', 'OBEC'])['REDIZO'].nunique()
+    dup_pairs = set(dup_counts[dup_counts > 1].index)
+
     for _, row in schools_grouped.iterrows():
         redizo = str(row['REDIZO'])
         skola = str(row.get('NÁZEV ŠKOLY', '')).strip()
@@ -106,17 +118,33 @@ def update_database(all_dfs):
         mesto = str(row.get('OBEC', '')).strip()
         okres = str(row.get('OKRES - NÁZEV', row.get('OKRES', ''))).strip()
         zriz = str(row.get('ZŘIZOVATEL - NÁZEV', row.get('ZŘIZOVATEL', ''))).strip()
+        ulice = str(row.get('ULICE', '')).strip() if pd.notna(row.get('ULICE')) else ''
+
+        if (skola, mesto) in dup_pairs:
+            if ulice:
+                disp = f"{skola}, {mesto} ({ulice})"
+            else:
+                disp = f"{skola}, {mesto} [{redizo}]"
+        else:
+            if mesto:
+                disp = f"{skola}, {mesto}"
+            else:
+                disp = skola
 
         cur.execute("""
-            INSERT INTO skoly (redizo, nazev_skoly, kraj, mesto, zrizovatel, okres)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO skoly (redizo, nazev_skoly, kraj, mesto, zrizovatel, okres, ulice, display_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(redizo) DO UPDATE SET
                 nazev_skoly = COALESCE(excluded.nazev_skoly, skoly.nazev_skoly),
                 kraj = COALESCE(excluded.kraj, skoly.kraj),
                 mesto = COALESCE(excluded.mesto, skoly.mesto),
                 zrizovatel = COALESCE(excluded.zrizovatel, skoly.zrizovatel),
-                okres = COALESCE(excluded.okres, skoly.okres)
-        """, (redizo, skola, kraj, mesto, zriz, okres))
+                okres = COALESCE(excluded.okres, skoly.okres),
+                ulice = COALESCE(excluded.ulice, skoly.ulice),
+                display_name = COALESCE(excluded.display_name, skoly.display_name)
+        """, (redizo, skola, kraj, mesto, zriz, okres, ulice, disp))
+
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_skoly_display_name ON skoly(display_name);")
 
     # 2. Číselník oborů
     print("Aktualizuji číselník oborů (obory)...")

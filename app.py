@@ -70,13 +70,18 @@ if page in ["Celkový přehled trhu", "Detail školy"]:
 
     selected_kategorie = st.sidebar.multiselect("Vyberte kategorii školy", cascading_opts_step1["kategorie"])
 
-    # Chytré kaskádové načítání oborů podle kraje, města a kategorie
+    # Chytré kaskádové načítání oborů a škol podle kraje, města a kategorie
     cascading_opts_step2 = get_cascading_filter_options(
         kraje=selected_kraj if selected_kraj else None,
         mesta=selected_mesto if selected_mesto else None,
         kategorie=selected_kategorie if selected_kategorie else None
     )
     selected_obor = st.sidebar.multiselect("Vyberte konkrétní obor", cascading_opts_step2["obory"])
+    selected_skola = st.sidebar.multiselect(
+        "Vyberte školu (název a město)",
+        cascading_opts_step2.get("skoly", []),
+        placeholder="Všechny školy nebo vyberte..."
+    )
 
     # Načtení dat trhu pro aktuální výběr
     df_market = load_market_data(
@@ -84,7 +89,8 @@ if page in ["Celkový přehled trhu", "Detail školy"]:
         kraje=selected_kraj if selected_kraj else None,
         mesta=selected_mesto if selected_mesto else None,
         kategorie=selected_kategorie if selected_kategorie else None,
-        obory=selected_obor if selected_obor else None
+        obory=selected_obor if selected_obor else None,
+        skoly=selected_skola if selected_skola else None
     )
 else:
     selected_year = 2025
@@ -92,6 +98,7 @@ else:
     selected_mesto = None
     selected_kategorie = None
     selected_obor = None
+    selected_skola = None
     df_market = None
 
 # --- ZOBRAZENÍ JEDNOTLIVÝCH POHLEDŮ ---
@@ -102,7 +109,8 @@ if page == "Celkový přehled trhu":
         selected_kraj=selected_kraj,
         selected_mesto=selected_mesto,
         selected_kategorie=selected_kategorie,
-        selected_obor=selected_obor
+        selected_obor=selected_obor,
+        selected_skola=selected_skola
     )
 
     with st.expander("🔍 Zobrazit surová data aktuálního výběru"):

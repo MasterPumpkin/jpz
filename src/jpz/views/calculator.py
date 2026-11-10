@@ -155,19 +155,21 @@ def render_calculator_view():
         > ⚠️ **Častá chyba:** Dát jako 3. prioritu školu, která je těžší než 1. nebo 2. priorita. Pokud neuspějete na 1. škole, na 3. škole nemáte šanci, a přihláška tak propadne.
         """)
 
-        all_schools = load_all_schools_list()
         conn = get_connection()
         school_obor_pairs = conn.execute("""
-            SELECT DISTINCT s.nazev_skoly, o.nazev_oboru 
+            SELECT DISTINCT 
+                s.redizo,
+                COALESCE(s.display_name, s.nazev_skoly || ', ' || s.mesto, s.nazev_skoly) AS skola_disp,
+                o.nazev_oboru 
             FROM skoly_historie h 
             JOIN skoly s ON h.redizo = s.redizo 
             JOIN obory o ON h.kod_oboru = o.kod_oboru
             WHERE h.min_percentil > 0
-            ORDER BY s.nazev_skoly, o.nazev_oboru
+            ORDER BY skola_disp, o.nazev_oboru
         """).fetchall()
         conn.close()
 
-        options_map = {f"{r[0]} – {r[1]}": (r[0], r[1]) for r in school_obor_pairs}
+        options_map = {f"{r['skola_disp']} – {r['nazev_oboru']}": (r['redizo'], r['nazev_oboru']) for r in school_obor_pairs}
         options_list = list(options_map.keys())
 
         c_opt1, c_opt2 = st.columns([1, 1])

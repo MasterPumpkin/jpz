@@ -35,9 +35,9 @@ def get_filter_options():
         conn.close()
 
 @st.cache_data(ttl=1800)
-def get_cascading_filter_options(kraje=None, mesta=None, kategorie=None):
+def get_cascading_filter_options(kraje=None, mesta=None, kategorie=None, obory=None):
     """
-    Chytré kaskádové filtry: vrací města, kategorie oborů a konkrétní obory
+    Chytré kaskádové filtry: vrací města, kategorie oborů, konkrétní obory a školy
     pouze pro aktuálně zvolený region a nadřazené filtry.
     """
     conn = get_connection()
@@ -74,16 +74,42 @@ def get_cascading_filter_options(kraje=None, mesta=None, kategorie=None):
         available_kategorie = sorted(list(set(r[0] for r in rows if r[0])))
         available_obory = sorted(list(set(r[1] for r in rows if r[1])))
 
+        # 3. Školy s městem (display_name) pro aktuální filtry
+        query_skoly = """
+        SELECT DISTINCT COALESCE(s.display_name, s.nazev_skoly || ', ' || s.mesto, s.nazev_skoly) AS display_name
+        FROM prihlasky_rocni p
+        JOIN skoly s ON p.redizo = s.redizo
+        JOIN obory o ON p.kod_oboru = o.kod_oboru
+        WHERE 1=1
+        """
+        params_s = []
+        if kraje:
+            query_skoly += f" AND s.kraj IN ({','.join('?' for _ in kraje)})"
+            params_s.extend(kraje)
+        if mesta:
+            query_skoly += f" AND s.mesto IN ({','.join('?' for _ in mesta)})"
+            params_s.extend(mesta)
+        if kategorie:
+            query_skoly += f" AND o.kategorie_oboru IN ({','.join('?' for _ in kategorie)})"
+            params_s.extend(kategorie)
+        if obory:
+            query_skoly += f" AND o.nazev_oboru IN ({','.join('?' for _ in obory)})"
+            params_s.extend(obory)
+        query_skoly += " ORDER BY display_name"
+
+        available_schools = [r[0] for r in conn.execute(query_skoly, params_s).fetchall()]
+
         return {
             "mesta": available_cities,
             "kategorie": available_kategorie,
-            "obory": available_obory
+            "obory": available_obory,
+            "skoly": available_schools
         }
     finally:
         conn.close()
 
 @st.cache_data(ttl=1800)
-def load_market_data(rok, kraje=None, mesta=None, kategorie=None, obory=None):
+def load_market_data(rok, kraje=None, mesta=None, kategorie=None, obory=None, skoly=None):
     """
     Rychle načte agregovaná data pro vybraný rok a aplikované filtry přímo z SQLite.
     Zahrnuje kompletní priority (P1, P2, P3 pro přihlášené i přijaté) a důvody odmítnutí.
@@ -94,6 +120,7 @@ def load_market_data(rok, kraje=None, mesta=None, kategorie=None, obory=None):
         SELECT 
             p.redizo,
             s.nazev_skoly AS Škola,
+            COALESCE(s.display_name, s.nazev_skoly || ', ' || s.mesto, s.nazev_skoly) AS Škola_Display,
             s.kraj AS Kraj,
             s.mesto AS Město,
             s.okres AS Okres,
@@ -101,7 +128,7 @@ def load_market_data(rok, kraje=None, mesta=None, kategorie=None, obory=None):
             p.kod_oboru AS KKOV,
             o.nazev_oboru AS Obor,
             COALESCE(o.kategorie_oboru, 'Ostatní') AS Kategorie_Oboru,
-            (s.nazev_skoly || ', ' || s.mesto || ' (' || o.nazev_oboru || ')') AS Skola_Obor,
+            (COALESCE(s.display_name, s.nazev_skoly || ', ' || s.mesto) || ' (' || o.nazev_oboru || ')') AS Skola_Obor,
             p.rok AS Rok,
             p.kapacita AS Kapacita,
             p.prihlaseni AS Prihlaseni,
@@ -146,6 +173,10 @@ def load_market_data(rok, kraje=None, mesta=None, kategorie=None, obory=None):
             placeholders = ",".join("?" for _ in obory)
             query += f" AND o.nazev_oboru IN ({placeholders})"
             params.extend(obory)
+        if skoly:
+            placeholders = ",".join("?" for _ in skoly)
+            query += f" AND (s.display_name IN ({placeholders}) OR s.nazev_skoly IN ({placeholders}))"
+            params.extend(skoly)
 
         df = pd.read_sql_query(query, conn, params=params)
         return df
@@ -154,10 +185,15 @@ def load_market_data(rok, kraje=None, mesta=None, kategorie=None, obory=None):
 
 @st.cache_data(ttl=1800)
 def load_all_schools_list(rok=None, kraje=None, mesta=None):
-    """Vrací seznam unikátních názvů škol pro výběr detailu a srovnávač."""
+    """Vrací seznam unikátních názvů škol včetně města pro výběr detailu a srovnávač."""
     conn = get_connection()
     try:
-        query = "SELECT DISTINCT s.nazev_skoly FROM prihlasky_rocni p JOIN skoly s ON p.redizo = s.redizo WHERE 1=1"
+        query = """
+        SELECT DISTINCT COALESCE(s.display_name, s.nazev_skoly || ', ' || s.mesto, s.nazev_skoly) AS display_name
+        FROM prihlasky_rocni p 
+        JOIN skoly s ON p.redizo = s.redizo 
+        WHERE 1=1
+        """
         params = []
         if rok:
             query += " AND p.rok = ?"
@@ -168,7 +204,7 @@ def load_all_schools_list(rok=None, kraje=None, mesta=None):
         if mesta:
             query += f" AND s.mesto IN ({','.join('?' for _ in mesta)})"
             params.extend(mesta)
-        query += " ORDER BY s.nazev_skoly"
+        query += " ORDER BY display_name"
         return [r[0] for r in conn.execute(query, params).fetchall()]
     finally:
         conn.close()
@@ -185,6 +221,7 @@ def load_school_detail_data(nazev_skoly, rok):
         SELECT 
             p.redizo,
             s.nazev_skoly AS Škola,
+            COALESCE(s.display_name, s.nazev_skoly || ', ' || s.mesto, s.nazev_skoly) AS Škola_Display,
             s.kraj AS Kraj,
             s.mesto AS Město,
             s.okres AS Okres,
@@ -192,7 +229,7 @@ def load_school_detail_data(nazev_skoly, rok):
             p.kod_oboru AS KKOV,
             o.nazev_oboru AS Obor,
             o.kategorie_oboru AS Kategorie_Oboru,
-            (s.nazev_skoly || ', ' || s.mesto || ' (' || o.nazev_oboru || ')') AS Skola_Obor,
+            (COALESCE(s.display_name, s.nazev_skoly || ', ' || s.mesto) || ' (' || o.nazev_oboru || ')') AS Skola_Obor,
             p.rok AS Rok,
             p.kapacita AS Kapacita,
             p.prihlaseni AS Prihlaseni,
@@ -215,14 +252,15 @@ def load_school_detail_data(nazev_skoly, rok):
         JOIN skoly s ON p.redizo = s.redizo
         JOIN obory o ON p.kod_oboru = o.kod_oboru
         LEFT JOIN skoly_historie h ON p.redizo = h.redizo AND p.kod_oboru = h.kod_oboru AND p.rok = h.rok
-        WHERE s.nazev_skoly = ? AND p.rok = ?
+        WHERE (s.display_name = ? OR s.nazev_skoly = ? OR s.redizo = ?) AND p.rok = ?
         ORDER BY p.prihlaseni DESC
         """
-        df_school = pd.read_sql_query(query_current, conn, params=[nazev_skoly, rok])
+        df_school = pd.read_sql_query(query_current, conn, params=[nazev_skoly, nazev_skoly, nazev_skoly, rok])
         if df_school.empty:
             return df_school, None, None
 
         kraj = df_school["Kraj"].iloc[0]
+        redizo_curr = df_school["redizo"].iloc[0]
         kkov_list = df_school["KKOV"].unique().tolist()
 
         # Benchmark konkurence ve stejném kraji a oborech
@@ -233,10 +271,10 @@ def load_school_detail_data(nazev_skoly, rok):
             SUM(p.prijati) as bm_prijati
         FROM prihlasky_rocni p
         JOIN skoly s ON p.redizo = s.redizo
-        WHERE p.rok = ? AND s.kraj = ? AND s.nazev_skoly != ?
+        WHERE p.rok = ? AND s.kraj = ? AND s.redizo != ?
           AND p.kod_oboru IN ({','.join('?' for _ in kkov_list)})
         """
-        bm_res = conn.execute(query_bm, [rok, kraj, nazev_skoly] + kkov_list).fetchone()
+        bm_res = conn.execute(query_bm, [rok, kraj, redizo_curr] + kkov_list).fetchone()
         benchmark = {
             "kapacita": bm_res["bm_kapacita"] or 0,
             "prihlaseni": bm_res["bm_prihlaseni"] or 0,
@@ -256,9 +294,9 @@ def load_school_detail_data(nazev_skoly, rok):
         FROM prihlasky_rocni p
         JOIN skoly s ON p.redizo = s.redizo
         LEFT JOIN skoly_historie h ON p.redizo = h.redizo AND p.kod_oboru = h.kod_oboru AND p.rok = h.rok
-        WHERE s.nazev_skoly = ? AND p.rok = ?
+        WHERE s.redizo = ? AND p.rok = ?
         """
-        df_prev = pd.read_sql_query(query_prev, conn, params=[nazev_skoly, prev_year])
+        df_prev = pd.read_sql_query(query_prev, conn, params=[redizo_curr, prev_year])
 
         if not df_prev.empty:
             df_school = pd.merge(df_school, df_prev, on="KKOV", how="left")
@@ -283,7 +321,8 @@ def load_comparison_data(school_names, rok):
         placeholders = ",".join("?" for _ in school_names)
         query = f"""
         SELECT 
-            s.nazev_skoly AS Škola,
+            COALESCE(s.display_name, s.nazev_skoly || ', ' || s.mesto, s.nazev_skoly) AS Škola,
+            s.nazev_skoly AS Škola_Nazev,
             s.mesto AS Město,
             s.kraj AS Kraj,
             s.zrizovatel AS Zřizovatel,
@@ -310,10 +349,10 @@ def load_comparison_data(school_names, rok):
         JOIN skoly s ON p.redizo = s.redizo
         JOIN obory o ON p.kod_oboru = o.kod_oboru
         LEFT JOIN skoly_historie h ON p.redizo = h.redizo AND p.kod_oboru = h.kod_oboru AND p.rok = h.rok
-        WHERE s.nazev_skoly IN ({placeholders}) AND p.rok = ?
-        ORDER BY s.nazev_skoly, p.prihlaseni DESC
+        WHERE (s.display_name IN ({placeholders}) OR s.nazev_skoly IN ({placeholders})) AND p.rok = ?
+        ORDER BY Škola, p.prihlaseni DESC
         """
-        params = list(school_names) + [rok]
+        params = list(school_names) + list(school_names) + [rok]
         return pd.read_sql_query(query, conn, params=params)
     finally:
         conn.close()
@@ -433,10 +472,11 @@ def evaluate_three_priorities(rok, choice1, choice2, choice3, avg_percentil):
         for idx, ch in enumerate(choices, 1):
             if not ch:
                 continue
-            # ch is (nazev_skoly, nazev_oboru)
-            skola, obor = ch
+            # ch is (identifier, nazev_oboru) kde identifier může být redizo, display_name nebo nazev_skoly
+            skola_id, obor = ch
             query = """
             SELECT 
+                COALESCE(s.display_name, s.nazev_skoly || ', ' || s.mesto, s.nazev_skoly) AS display_name,
                 s.nazev_skoly,
                 o.nazev_oboru,
                 o.kategorie_oboru,
@@ -447,13 +487,13 @@ def evaluate_three_priorities(rok, choice1, choice2, choice3, avg_percentil):
             FROM skoly_historie h
             JOIN skoly s ON h.redizo = s.redizo
             JOIN obory o ON h.kod_oboru = o.kod_oboru
-            WHERE s.nazev_skoly = ? AND o.nazev_oboru = ? AND h.rok = ?
+            WHERE (s.redizo = ? OR s.display_name = ? OR s.nazev_skoly = ?) AND o.nazev_oboru = ? AND h.rok = ?
             """
-            r = conn.execute(query, (skola, obor, rok)).fetchone()
+            r = conn.execute(query, (skola_id, skola_id, skola_id, obor, rok)).fetchone()
             if r:
                 results.append({
                     "priorita": idx,
-                    "skola": r["nazev_skoly"],
+                    "skola": r["display_name"],
                     "obor": r["nazev_oboru"],
                     "kategorie": r["kategorie_oboru"],
                     "min_pct": r["min_percentil"],

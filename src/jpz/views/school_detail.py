@@ -22,7 +22,7 @@ def render_school_detail_view(selected_year, selected_kraj, selected_mesto):
         return
 
     # Rychlý full-text filtr pro výběr školy
-    search_query = st.text_input("🔍 Rychlé vyhledání školy podle názvu:", placeholder="např. Kepler, Smíchovská, Neruda, Kladno...")
+    search_query = st.text_input("🔍 Rychlé vyhledání školy podle názvu nebo města:", placeholder="např. Kepler, Smíchovská, Kladno, Zatlanka, Plzeň...")
     if search_query.strip():
         filtered_schools = [s for s in all_schools if search_query.strip().lower() in s.lower()]
         if not filtered_schools:

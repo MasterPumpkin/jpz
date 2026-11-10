@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 import pandas as pd
 from src.jpz.db import load_yoy_data
 
-def render_market_view(df_final, selected_year, selected_kraj, selected_mesto, selected_kategorie, selected_obor):
+def render_market_view(df_final, selected_year, selected_kraj, selected_mesto, selected_kategorie, selected_obor, selected_skola=None):
     st.header("📊 Celkový přehled trhu")
 
     if df_final.empty:
