@@ -9,18 +9,20 @@ Interaktivní analytický dashboard vytvořený v Pythonu (Streamlit), který vi
 Aplikace nabízí ucelený analytický systém ve čtyřech sekcích:
 
 ### 1. Celkový přehled trhu
+- **Souhrnné KPI metriky trhu**: Celková kapacita, počet přihlášek s převisem poptávky, průměrná úspěšnost a míra odlivu uchazečů.
 - **Strategická matice (Šance vs. Konkurence)**: Scatter plot srovnávající převis poptávky a úspěšnost přijetí, velikost bublin odpovídá kapacitě a hover obsahuje bodové hranice a percentily.
 - **Kompletní analýza priorit**: Přepínač mezi strukturou *Přihlášených* a reálně *Přijatých* žáků podle 1., 2. a 3. priority.
 - **Důvody nepřijetí**: Rozpad zamítnutí (nedostačující kapacita, nesplnění podmínek, odliv na prioritnější školu) v absolutních i relativních (%) hodnotách.
-- **Chytré kaskádové filtry**: Výběr kraje automaticky omezí nabízená města, kategorie i konkrétní obory.
+- **Chytré kaskádové filtry a jednoznačné školy**: Výběr kraje automaticky omezí nabízená města, kategorie, obory i konkrétní školy (s městy a adresami pro odlišení desítek gymnázií a průmyslovek se stejným názvem).
+- **Tlačítko resetu filtrů**: Okamžité vymazání všech zvolených filtrů jedním kliknutím (`🔄 Resetovat filtry`).
 - **Export do CSV**: Možnost okamžitého stažení vyfiltrované tabulky jedním kliknutím.
 
 ### 2. Detail školy
-- Podrobný profil konkrétní střední školy.
+- Podrobný profil konkrétní střední školy s jednoznačným rozlišením města a adresy.
 - **Benchmarking vůči regionu**: Převis i úspěšnost školy porovnaná s průměrem konkurence ve stejném kraji a oborech.
 - **Bodové hranice a percentily**: Minimální a průměrný percentil přijatých uchazečů z testů Cermat.
 - **Meziroční vývoj oborů**: Indikátory trendu přihlášek (`↑` / `↓` / `Nový obor`).
-- **Fulltext vyhledávání**: Rychlé vyhledání školy podle názvu bez nutnosti procházet dlouhé seznamy.
+- **Fulltext vyhledávání**: Rychlé vyhledání školy podle názvu, města či adresy (např. *Kepler*, *Zatlanka*, *Kladno*, *Plzeň*).
 
 ### 3. ⚖️ Srovnávač škol (Head-to-Head)
 - Přímé porovnání **2 až 3 škol vedle sebe**.
@@ -50,7 +52,19 @@ Aplikace nabízí ucelený analytický systém ve čtyřech sekcích:
   - `src/jpz/views/school_detail.py`: Detail školy.
   - `src/jpz/views/compare.py`: Srovnávač škol.
   - `src/jpz/views/calculator.py`: Kalkulačka šancí a strategický rádce.
+  - `scripts/download_cermat_data.py`: Automatický stahovač a aktualizátor výsledků přímo z oficiálního portálu Cermat (`data.cermat.gov.cz`).
   - `app.py`: Hlavní Streamlit aplikace.
+
+## Aktualizace dat z Cermatu
+
+Pro stažení nových výsledků a aktualizaci databáze:
+```bash
+uv run python scripts/download_cermat_data.py
+```
+Nebo pro konkrétní ročník:
+```bash
+uv run python scripts/download_cermat_data.py --years 2026
+```
 
 ## Spuštění aplikace
 
