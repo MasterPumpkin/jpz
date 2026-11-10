@@ -1,0 +1,18 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.uv_cache/
+
+# Downloaded raw datasets
+data/downloads/
+
+# SQLite WAL files
+*.db-wal
+*.db-shm
