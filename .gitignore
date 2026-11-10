@@ -1,18 +1,40 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
+# ==============================================================================
+# .gitignore pro nasazení na Streamlit Community Cloud (streamlit.app)
+# Do repozitáře jdou pouze soubory potřebné pro běh aplikace a cermat.db
+# ==============================================================================
 
-# Virtual environments
-.venv
+# Python virtuální prostředí a balíčkovací cache
+.venv/
+venv/
+env/
 .uv_cache/
+uv.lock
 
-# Downloaded raw datasets
-data/downloads/
+# Python cache & build soubory
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
 
-# SQLite WAL files
+# Dočasné transakční soubory SQLite (samotná databáze cermat.db v gitu ZŮSTÁVÁ)
 *.db-wal
 *.db-shm
+*.db-journal
+
+# Archivní a stažené surové datové soubory (pro běh aplikace na streamlit.app nejsou potřeba)
+archive/
+data/
+
+# Vývojářské konfigurace a lokální nastavení
+.devcontainer/
+.idea/
+.vscode/
+*.swp
+*.swo
+.streamlit/secrets.toml
+
+# Systémové soubory OS
+.DS_Store
+Thumbs.db
