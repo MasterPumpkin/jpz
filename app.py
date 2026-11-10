@@ -26,13 +26,17 @@ st.set_page_config(
 )
 
 st.title("📊 Analýza přijímacích řízení na střední školy (2024–2026)")
-st.markdown("""
-Tento dashboard analyzuje oficiální data z přijímacího řízení a jednotných přijímacích zkoušek (Cermat):
-* **Bleskově rychlý SQLite backend**: Žádné zdlouhavé načítání velkých CSV souborů za běhu.
-* **Kompletní data**: Všechny priority (1., 2., 3. přihláška) i důvody nepřijetí (nedostatek kapacity, nesplnění podmínek, odliv).
-* **Kategorie oborů**: Čisté rozlišení (Gymnázia 4/6/8letá, Lycea, SOŠ, SOU).
-* **Výsledky JPZ**: Bodové hranice a percentily přijatých žáků z testů Cermat.
-""")
+st.caption("Oficiální agregovaná data Cermat z jednotných přijímacích zkoušek (JPZ) • Optimalizovaný SQLite backend")
+
+with st.expander("ℹ️ O aplikaci, metodice a datech Cermat", expanded=False):
+    st.markdown("""
+    Tento interaktivní dashboard analyzuje oficiální výsledky přijímacích řízení a JPZ:
+    * **Kompletní priority (1., 2. a 3. přihláška)**: Sledování skutečných preferencí uchazečů i reálné úspěšnosti.
+    * **Důvody nepřijetí**: Rozpad na nedostatek kapacity, nesplnění podmínek a odliv na preferovanější školu.
+    * **Kategorie oborů**: Čisté rozlišení (Gymnázia 4/6/8letá, Lycea, SOŠ, SOU a další).
+    * **Výsledkové percentily**: Bodové hranice a percentily přijatých žáků z testů z českého jazyka a matematiky.
+    * **Jednoznačná identifikace**: Školy jsou rozlišeny názvem, městem a sídelní adresou.
+    """)
 
 # --- NAČTENÍ ZÁKLADNÍCH MOŽNOSTÍ FILTRŮ ---
 base_filter_opts = get_filter_options()
@@ -51,37 +55,48 @@ page = st.sidebar.radio(
 
 st.sidebar.divider()
 
-# --- SIDEBAR: GLOBÁLNÍ FILTRY (pro přehled trhu a detail školy) ---
-if page in ["Celkový přehled trhu", "Detail školy"]:
-    st.sidebar.header("Filtry")
+# Reset filtrů logika
+def reset_filters():
+    for k in ["market_kraj", "market_mesto", "market_kat", "market_obor", "market_skola", "detail_kraj", "detail_mesto"]:
+        if k in st.session_state:
+            st.session_state[k] = []
 
-    # Výchozí je nejnovější rok (2026)
+# --- SIDEBAR: GLOBÁLNÍ FILTRY ---
+if page == "Celkový přehled trhu":
+    st.sidebar.header("Filtry trhu")
+
     selected_year = st.sidebar.selectbox(
         "Vyberte rok",
         base_filter_opts["years"],
-        index=0
+        index=0,
+        key="market_year"
     )
 
-    selected_kraj = st.sidebar.multiselect("Vyberte kraj", base_filter_opts["kraje"])
+    selected_kraj = st.sidebar.multiselect("Vyberte kraj", base_filter_opts["kraje"], key="market_kraj")
 
-    # Chytré kaskádové načítání měst a kategorií podle vybraných krajů
+    # Kaskádové načítání měst a kategorií
     cascading_opts_step1 = get_cascading_filter_options(kraje=selected_kraj if selected_kraj else None)
-    selected_mesto = st.sidebar.multiselect("Vyberte město", cascading_opts_step1["mesta"])
+    selected_mesto = st.sidebar.multiselect("Vyberte město", cascading_opts_step1["mesta"], key="market_mesto")
+    selected_kategorie = st.sidebar.multiselect("Vyberte kategorii školy", cascading_opts_step1["kategorie"], key="market_kat")
 
-    selected_kategorie = st.sidebar.multiselect("Vyberte kategorii školy", cascading_opts_step1["kategorie"])
-
-    # Chytré kaskádové načítání oborů a škol podle kraje, města a kategorie
+    # Kaskádové načítání oborů a škol
     cascading_opts_step2 = get_cascading_filter_options(
         kraje=selected_kraj if selected_kraj else None,
         mesta=selected_mesto if selected_mesto else None,
         kategorie=selected_kategorie if selected_kategorie else None
     )
-    selected_obor = st.sidebar.multiselect("Vyberte konkrétní obor", cascading_opts_step2["obory"])
+    selected_obor = st.sidebar.multiselect("Vyberte konkrétní obor", cascading_opts_step2["obory"], key="market_obor")
     selected_skola = st.sidebar.multiselect(
         "Vyberte školu (název a město)",
         cascading_opts_step2.get("skoly", []),
-        placeholder="Všechny školy nebo vyberte..."
+        placeholder="Všechny školy nebo vyberte...",
+        key="market_skola"
     )
+
+    # Tlačítko resetovat filtry, pokud je nějaký aktivní
+    has_active_filter = any([selected_kraj, selected_mesto, selected_kategorie, selected_obor, selected_skola])
+    if has_active_filter:
+        st.sidebar.button("🔄 Resetovat filtry", on_click=reset_filters, use_container_width=True)
 
     # Načtení dat trhu pro aktuální výběr
     df_market = load_market_data(
@@ -92,8 +107,28 @@ if page in ["Celkový přehled trhu", "Detail školy"]:
         obory=selected_obor if selected_obor else None,
         skoly=selected_skola if selected_skola else None
     )
+
+elif page == "Detail školy":
+    st.sidebar.header("Zúžení výběru školy")
+    selected_year = st.sidebar.selectbox(
+        "Vyberte rok",
+        base_filter_opts["years"],
+        index=0,
+        key="detail_year"
+    )
+    selected_kraj = st.sidebar.multiselect("Filtrovat dle kraje", base_filter_opts["kraje"], key="detail_kraj")
+    cascading_opts_detail = get_cascading_filter_options(kraje=selected_kraj if selected_kraj else None)
+    selected_mesto = st.sidebar.multiselect("Filtrovat dle města", cascading_opts_detail["mesta"], key="detail_mesto")
+
+    if selected_kraj or selected_mesto:
+        st.sidebar.button("🔄 Resetovat filtry", on_click=reset_filters, use_container_width=True)
+
+    selected_kategorie = None
+    selected_obor = None
+    selected_skola = None
+    df_market = None
 else:
-    selected_year = 2025
+    selected_year = 2026
     selected_kraj = None
     selected_mesto = None
     selected_kategorie = None

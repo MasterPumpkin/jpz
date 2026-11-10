@@ -410,7 +410,8 @@ def calculate_chances(rok, body_cjl, body_mat, kraj=None, kategorie=None, query_
 
         query = """
         SELECT 
-            s.nazev_skoly AS Škola,
+            COALESCE(s.display_name, s.nazev_skoly || ', ' || s.mesto, s.nazev_skoly) AS Škola,
+            s.nazev_skoly AS Škola_Nazev,
             s.mesto AS Město,
             s.kraj AS Kraj,
             s.okres AS Okres,

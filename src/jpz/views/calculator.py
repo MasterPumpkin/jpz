@@ -137,7 +137,14 @@ def render_calculator_view():
                 'Převis_P1': 'Přetlak (P1/místo)'
             })
 
-            st.dataframe(df_show, hide_index=True)
+            format_calc = {
+                'Min. percentil': lambda x: f"{x:.1f} %" if pd.notna(x) else "—",
+                'Prům. percentil': lambda x: f"{x:.1f} %" if pd.notna(x) else "—",
+                'Min. body': lambda x: f"{x:.0f}" if pd.notna(x) else "—",
+                'Přetlak (P1/místo)': lambda x: f"{x:.2f}x" if pd.notna(x) else "—",
+                'Kapacita': '{:.0f}'
+            }
+            st.dataframe(df_show.style.format({k: v for k, v in format_calc.items() if k in df_show.columns}), hide_index=True)
         else:
             st.warning("Pro zadaná kritéria nebyly nalezeny žádné školy. Zkuste upravit filtry.")
 

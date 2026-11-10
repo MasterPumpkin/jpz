@@ -155,5 +155,16 @@ def render_compare_view():
         'Min_Body': 'Min. body'
     })
 
-    st.dataframe(df_table, hide_index=True)
+    format_cmp = {
+        'Kapacita': '{:.0f}',
+        'Prihlaseni': '{:.0f}',
+        'Prijati': '{:.0f}',
+        'Převis': '{:.2f}x',
+        'Úspěšnost (%)': '{:.1f} %',
+        'Min. percentil': lambda x: f"{x:.1f} %" if pd.notna(x) else "—",
+        'Prům. percentil': lambda x: f"{x:.1f} %" if pd.notna(x) else "—",
+        'Min. body': lambda x: f"{x:.0f}" if pd.notna(x) else "—"
+    }
+
+    st.dataframe(df_table.style.format({k: v for k, v in format_cmp.items() if k in df_table.columns}), hide_index=True)
 

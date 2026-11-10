@@ -27,6 +27,37 @@ def render_market_view(df_final, selected_year, selected_kraj, selected_mesto, s
             help="Stáhne aktuálně vyfiltrovanou tabulku do CSV (otevřitelné v Excelu)"
         )
 
+    # --- SOUHRNNÉ METRIKY TRHU ---
+    tot_capacity = int(df_final['Kapacita'].sum())
+    tot_applicants = int(df_final['Prihlaseni'].sum())
+    tot_accepted = int(df_final['Prijati'].sum())
+    avg_previs = tot_applicants / tot_capacity if tot_capacity > 0 else 0
+    avg_uspesnost = (tot_accepted / tot_applicants * 100) if tot_applicants > 0 else 0
+
+    tot_odliv = df_final['Duvod_Vyssi_Priorita'].sum() if 'Duvod_Vyssi_Priorita' in df_final.columns else 0
+    odliv_pct = (tot_odliv / tot_applicants * 100) if tot_applicants > 0 else 0
+
+    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+    kpi1.metric("Celková kapacita", f"{tot_capacity:,} míst".replace(",", " "))
+    kpi2.metric(
+        "Podané přihlášky",
+        f"{tot_applicants:,}".replace(",", " "),
+        delta=f"{avg_previs:.2f}x převis",
+        delta_color="off"
+    )
+    kpi3.metric(
+        "Průměrná úspěšnost",
+        f"{avg_uspesnost:.1f} %",
+        help="Podíl přijatých žáků vůči všem podaným přihláškám."
+    )
+    kpi4.metric(
+        "Míra odlivu uchazečů",
+        f"{odliv_pct:.1f} %",
+        help="Podíl uchazečů, kteří splnili kritéria, ale byli přijati na školu s vyšší prioritou."
+    )
+
+    st.divider()
+
     # --- 1. SCATTER PLOT: Šance vs. Konkurence ---
     st.subheader("1. Strategická matice: Šance vs. Konkurence")
     st.info("💡 **Vlevo nahoře:** Vysoká šance, malá konkurence (Jistota). **Vpravo dole:** Velká konkurence, malá šance (Masakr). Bubliny jsou škálované dle kapacity.")
@@ -67,12 +98,16 @@ def render_market_view(df_final, selected_year, selected_kraj, selected_mesto, s
     with col2:
         st.markdown("### Top 'Jistoty'")
         top_picks = df_final[(df_final['Previs_Poptavky'] < 1.2) & (df_final['Uspesnost_Pct'] > 80)]
-        display_jistoty = top_picks[['Skola_Obor', 'Uspesnost_Pct', 'Previs_Poptavky']].sort_values('Uspesnost_Pct', ascending=False).head(10)
+        display_jistoty = top_picks[['Skola_Obor', 'Uspesnost_Pct', 'Previs_Poptavky']].sort_values('Uspesnost_Pct', ascending=False).head(10).copy()
+        display_jistoty = display_jistoty.rename(columns={
+            'Skola_Obor': 'Škola a obor',
+            'Uspesnost_Pct': 'Úspěšnost',
+            'Previs_Poptavky': 'Převis'
+        })
         st.dataframe(
-            display_jistoty.rename(columns={
-                'Skola_Obor': 'Škola a obor',
-                'Uspesnost_Pct': 'Úspěšnost (%)',
-                'Previs_Poptavky': 'Převis'
+            display_jistoty.style.format({
+                'Úspěšnost': '{:.1f} %',
+                'Převis': '{:.2f}x'
             }),
             hide_index=True
         )
@@ -192,7 +227,7 @@ def render_market_view(df_final, selected_year, selected_kraj, selected_mesto, s
             fig_reject.update_layout(yaxis={'categoryorder': 'total ascending'}, height=420)
             st.plotly_chart(fig_reject, width="stretch")
     else:
-        st.info(f"Pro rok {selected_year} nejsou evidovány detailní důvody nepřijetí (kapacita, podmínky, odliv). Pro tyto detailní analýzy vyberte v sidebaru rok **2025** nebo **2024**.")
+        st.info("Pro zadaný výběr nejsou evidovány detailní důvody nepřijetí (kapacita, podmínky, odliv).")
 
     # --- 4. OBOROVÁ ANALÝZA ---
     st.divider()

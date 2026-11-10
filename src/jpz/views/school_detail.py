@@ -154,7 +154,18 @@ def render_school_detail_view(selected_year, selected_kraj, selected_mesto):
                 return 'color: #d62728; font-weight: bold;'
         return ''
 
-    styler = df_display.style
+    format_dict = {
+        'Kapacita': '{:.0f}',
+        'Prihlaseni': '{:.0f}',
+        'Prijati': '{:.0f}',
+        'Převis': '{:.2f}x',
+        'Úspěšnost (%)': '{:.1f} %',
+        'Min. percentil': lambda x: f"{x:.1f} %" if pd.notna(x) else "—",
+        'Prům. percentil': lambda x: f"{x:.1f} %" if pd.notna(x) else "—",
+        'Min. body': lambda x: f"{x:.0f}" if pd.notna(x) else "—"
+    }
+
+    styler = df_display.style.format({k: v for k, v in format_dict.items() if k in df_display.columns})
     if 'Meziroční trend' in df_display.columns:
         styler = styler.map(color_trend, subset=['Meziroční trend'])
 
